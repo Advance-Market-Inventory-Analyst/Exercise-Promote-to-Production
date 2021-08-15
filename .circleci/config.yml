@@ -4,12 +4,12 @@ jobs:
       docker:
         - image: amazon/aws-cli
       steps:
-        - checkout
-        - run: |
+        - checkout                                                          # Name of the S3 bucket you created manually.
+        - run: |  
               aws cloudformation deploy \
                 --template-file .circleci/files/cloudfront.yml \
                 --stack-name production-distro \
-                --parameter-overrides PipelineID="${promote-to-production}" \      # Name of the S3 bucket you created manually.
+                --parameter-overrides PipelineID="${promote-to-production}" \      
                 --tags project=udapeople &
 
     create_and_deploy_front_end:
