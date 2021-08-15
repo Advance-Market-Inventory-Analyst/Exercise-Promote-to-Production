@@ -11,8 +11,7 @@ jobs:
              --stack-name "${CIRCLE_WORKFLOW_ID}" \
              --parameter-overrides NAME="${CIRCLE_WORKFLOW_ID}"
        - run: aws s3 sync . s3://"${CIRCLE_WORKFLOW_ID}" --delete
-     context:
-       - AWSPolicy
+    
 
    promote_to_production:
      docker:
@@ -23,14 +22,16 @@ jobs:
            aws cloudformation deploy \
              --template-file cloudformation.yml \
              --stack-name cloudfront \
-             --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID}"
-     context:
-       - AWSPolicy            
+             --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID}"            
 
 workflows:
    default:
      jobs:
-     - create_and_deploy_front_end
-     - promote_to_production
+     - create_and_deploy_front_end:
+         context:
+           - AWSPolicy
+     - promote_to_production:
+         context:
+           - AWSPolicy
 requires: 
      - create_and_deploy_front_end
