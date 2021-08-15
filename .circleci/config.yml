@@ -9,7 +9,7 @@ jobs:
               aws cloudformation deploy \
                 --template-file .circleci/files/cloudfront.yml \
                 --stack-name production-distro \
-                --parameter-overrides PipelineID="promote-to-production" \      
+                --parameter-overrides PipelineID="${"promote-to-production"}" \   
                 --tags project=udapeople &
 
     create_and_deploy_front_end:
