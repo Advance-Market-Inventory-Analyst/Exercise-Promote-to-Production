@@ -4,7 +4,7 @@ jobs:
       docker:
         - image: amazon/aws-cli
       steps:
-        - checkout                                                          # Name of the S3 bucket you created manually.
+        - checkout                                                               # Name of the S3 bucket you created manually.
         - run: |  
               aws cloudformation deploy \
                 --template-file .circleci/files/cloudfront.yml \
