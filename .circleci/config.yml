@@ -1,37 +1,74 @@
 version: 2.1
 jobs:
-   create_and_deploy_front_end:
-     docker:
-       - image: amazon/aws-cli
-     steps:
-       - checkout
-       - run: |
-           aws cloudformation deploy \
-             --template-file .circleci/files/bucket.yml \
-             --stack-name "${CIRCLE_WORKFLOW_ID}" \
-             --parameter-overrides NAME="${CIRCLE_WORKFLOW_ID}"
-       - run: aws s3 sync . s3://"${CIRCLE_WORKFLOW_ID}" --delete
-    
+    create_production:
+      docker:
+        - image: amazon/aws-cli
+      steps:
+        - checkout
+        - run: |
+              aws cloudformation deploy \
+                --template-file .circleci/files/cloudfront.yml \
+                --stack-name production-distro \
+                --parameter-overrides PipelineID="${promote-to-production}" \      # Name of the S3 bucket you created manually.
+                --tags project=udapeople &
 
-   promote_to_production:
-     docker:
-       - image: amazon/aws-cli
-     steps:
-       - checkout
-       - run: |
-           aws cloudformation deploy \
-             --template-file .circleci/files/cloudfront.yml \
-             --stack-name cloudfront \
-             --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID}"            
+    create_and_deploy_front_end:
+      docker:
+        - image: amazon/aws-cli
+      steps:
+        - checkout
+        - run: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/bucket.yml \
+              --stack-name "${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides NAME="${CIRCLE_WORKFLOW_ID:0:7}"
+        - run: aws s3 sync . s3://"${CIRCLE_WORKFLOW_ID}" --delete
+      
+    promote_to_production:
+      docker:
+        - image: amazon/aws-cli
+      steps:
+        - checkout
+        - run: |
+            aws cloudformation deploy \
+              --template-file .circleci/files/cloudfront.yml \
+              --stack-name cloudfront \
+              --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID:0:7}" 
 
+    get_last_deployment_id:                       
+      docker:
+        - image: amazon/aws-cli
+      steps:
+        - checkout
+        - run: |
+                aws cloudformation \
+                list-exports --query "Exports[?Name==\`PipelineID\`].Value" \
+                --no-paginate --output text
+
+    clean_up_old_front_end: 
+      docker:
+        - image: amazon/aws-cli
+      steps:
+        - checkout
+        - run: | 
+             aws s3 rm "s3://${OldPipelineID}" --recursive
+             aws cloudformation delete-stack --stack-name "${PreviousPipelineID}"  
+        
 workflows:
-   default:
-     jobs:
-     - create_and_deploy_front_end:
-         context:
-           - AWSPolicy
-     - promote_to_production:
-         context:
-           - AWSPolicy
+    default:
+      jobs:
+      - create_production:
+          context:
+          - AWSPolicy         # Using Contexts https://circleci.com/docs/2.0/contexts/
+      - create_and_deploy_front_end:
+          context:
+          - AWSPolicy 
+      - promote_to_production:
+          context:
+          - AWSPolicy
 requires: 
-     - create_and_deploy_front_end
+      - create_and_deploy_front_end
+
+      - clean_up_old_front_end: 
+        context:
+          - AWSPolicy
