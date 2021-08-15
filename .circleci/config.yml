@@ -19,8 +19,8 @@ jobs:
      steps:
        - checkout
        - run: |
-           aws cloudformation deploy .\Exercise-Promote-to-Production\cloudfront.yml
-             --template-file .  \
+           aws cloudformation deploy \
+             --template-file .\Exercise-Promote-to-Production\cloudfront.yml \
              --stack-name cloudfront \
              --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID}"            
 
